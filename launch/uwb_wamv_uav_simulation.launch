@@ -1,0 +1,20 @@
+    <launch>
+    <!-- <include file="$(find vrx_gazebo)/launch/vrx_drone.launch"/> -->
+
+    <node name="map_to_wamv_base" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 map wamv/base_link"/>
+    <node name="wamv_base_to_uwb_origin" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 wamv/base_link wamv/uwb_origin"/>
+
+    <node name="wamv_origin_to_wamv_uwb_0" pkg="tf2_ros" type="static_transform_publisher" args="-0.65  0.39  2.20 0 0 0 wamv/uwb_origin wamv/uwb/0"/>
+    <node name="wamv_origin_to_wamv_uwb_1" pkg="tf2_ros" type="static_transform_publisher" args=" 0.05  0.39  1.42 0 0 0 wamv/uwb_origin wamv/uwb/1"/>
+    <node name="wamv_origin_to_wamv_uwb_2" pkg="tf2_ros" type="static_transform_publisher" args=" 0.65  0.39  2.20 0 0 0 wamv/uwb_origin wamv/uwb/2"/>
+    <node name="wamv_origin_to_wamv_uwb_3" pkg="tf2_ros" type="static_transform_publisher" args="-0.65 -0.39  2.20 0 0 0 wamv/uwb_origin wamv/uwb/3"/>
+    <node name="wamv_origin_to_wamv_uwb_4" pkg="tf2_ros" type="static_transform_publisher" args=" 0.05 -0.39  1.42 0 0 0 wamv/uwb_origin wamv/uwb/4"/>
+    <node name="wamv_origin_to_wamv_uwb_5" pkg="tf2_ros" type="static_transform_publisher" args=" 0.65 -0.39  2.20 0 0 0 wamv/uwb_origin wamv/uwb/5"/>
+
+    <node pkg="pozyx_simulation" name="pozyx_simulation"  type="uwb_simulation_wamv_uav.py" output="screen">
+    </node>
+
+    <node name="map_to_uav_origin" pkg="tf2_ros" type="static_transform_publisher" args="2 0 0 0 0 0 map local_origin"/>
+
+
+</launch>
