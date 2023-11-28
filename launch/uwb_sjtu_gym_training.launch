@@ -1,0 +1,48 @@
+<launch>
+    <!-- <include file="$(find vrx_gazebo)/launch/vrx_drone.launch"/> -->
+    <arg name="drone_ns" default="sjtu_drone"/>
+    
+    <arg name="enable_wamv" default="false"/>
+
+    <group ns="pozyx_simulation">
+        <node pkg="ros_tools" type="model_state_to_tf" name="model_state_to_tf_wamv" output="log" if="$(arg enable_wamv)">
+            <param name="model_name" value="wamv"/>
+            <param name="model_tf_suffix" value="/base_link"/>
+            <param name="broadcast_rate" value="100"/>
+        </node>
+
+        <node pkg="ros_tools" type="model_state_to_tf" name="model_state_to_tf_drone" output="log">
+            <param name="model_name" value="$(arg drone_ns)"/>
+            <param name="model_tf_suffix" value="/base_link"/>
+            <param name="broadcast_rate" value="100"/>
+        </node>
+        
+        <node pkg="ros_tools" type="model_state_to_pose_stamped.py" name="model_state_to_pose_stamped_drone_to_wamv" output="log" if="$(arg enable_wamv)">
+            <param name="model_name" value="$(arg drone_ns)"/>
+            <param name="relative_entity_name" value="wamv"/>
+            <param name="pose_topic_suffix" value="/pose_stamped/wamv"/>
+            <param name="publish_rate" value="100"/>
+        </node>
+
+        <node pkg="ros_tools" type="model_state_to_pose_stamped" name="model_state_to_pose_stamped_drone_to_world" output="log">
+            <param name="model_name" value="$(arg drone_ns)"/>
+            <param name="relative_entity_name" value="world"/>
+            <param name="pose_topic_suffix" value="/pose_stamped"/>
+            <param name="publish_rate" value="100"/>
+        </node>
+        
+        <!-- <node pkg="ros_tools" type="model_state_to_pose_stamped.py" name="model_state_to_pose_stamped_drone" output="log">
+            <param name="model_name" value="$(arg drone_ns)"/>
+            <param name="pose_topic_suffix" value="/pose_stamped"/>
+            <param name="publish_rate" value="100"/>
+        </node> -->
+
+    </group>
+
+    <!-- <param name="$(arg drone_ns)/robot_description" command="cat /home/argrobotx/robotx-2022/sdf2urdf/iris.urdf"/> -->
+    <node name="tf_drone_to_rotor_0" pkg="tf2_ros" type="static_transform_publisher" args="0.130000 -0.220000 0.023000 0 0 0 $(arg drone_ns)/base_link $(arg drone_ns)/rotor_0"/>
+    <node name="tf_drone_to_rotor_1" pkg="tf2_ros" type="static_transform_publisher" args="-0.130000 0.200000 0.023000 0 0 0 $(arg drone_ns)/base_link $(arg drone_ns)/rotor_1"/>
+    <node name="tf_drone_to_rotor_2" pkg="tf2_ros" type="static_transform_publisher" args="0.13 0.220000 0.023000 0 0 0 $(arg drone_ns)/base_link $(arg drone_ns)/rotor_2"/>
+    <node name="tf_drone_to_rotor_3" pkg="tf2_ros" type="static_transform_publisher" args="-0.13 -0.200000 0.023000 0 0 0 $(arg drone_ns)/base_link $(arg drone_ns)/rotor_3"/>
+
+</launch>

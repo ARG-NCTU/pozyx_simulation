@@ -2,14 +2,14 @@
     <!-- <include file="$(find vrx_gazebo)/launch/vrx_drone.launch"/> -->
     <arg name="drone_ns" default="drone"/>
     <arg name="enable_wamv" default="false"/>
-
+    <arg name="wamv_name" default="wamv2"/>
     <group ns="pozyx_simulation">
-        <node pkg="ros_tools" type="model_state_to_tf.py" name="model_state_to_tf_wamv" output="screen">
-            <param name="model_name" value="wamv"/>
+        <node pkg="ros_tools" type="model_state_to_tf.py" name="model_state_to_tf_wamv" output="log">
+            <param name="model_name" value="$(arg wamv_name)"/>
             <param name="model_tf_suffix" value="/base_link"/>
         </node>
 
-        <node pkg="ros_tools" type="model_state_to_tf.py" name="model_state_to_tf_drone" output="screen">
+        <node pkg="ros_tools" type="model_state_to_tf.py" name="model_state_to_tf_drone" output="log">
             <param name="model_name" value="$(arg drone_ns)"/>
             <param name="model_tf_suffix" value="/base_link"/>
             <param name="broadcast_rate" value="10"/>
@@ -32,8 +32,9 @@
         </node>
 
         <group ns="uwb0">
-            <node pkg="pozyx_simulation" name="pozyx_simulation" type="uwb_simulation_wamv_uav.py" output="screen">
+            <node pkg="pozyx_simulation" name="pozyx_simulation" type="uwb_simulation_wamv_uav.py" output="log">
                 <param name="tag_frame" value="$(arg drone_ns)/uwb/0"/>
+                <param name="robot_frame" value="$(arg wamv_name)/base_link"/>
             </node>
 
             <node pkg="ros_tools" type="pose_stamed_to_path.py" name="estimated_pose_to_path" output="screen">
@@ -51,6 +52,7 @@
             </node>
 
             <node pkg="pozyx_ros" type="multilateration_ros.py" name="multilateration_ros" output="screen">
+                <param name="wamv_name" value="$(arg wamv_name)"/>
                 <remap from="uwb/distances" to="distance"/>
                 <remap from="uwb/pose" to="pose/optim"/>
             </node>
@@ -66,6 +68,7 @@
         <group ns="uwb1">
             <node pkg="pozyx_simulation" name="pozyx_simulation" type="uwb_simulation_wamv_uav.py" output="screen">
                 <param name="tag_frame" value="$(arg drone_ns)/uwb/1"/>
+                <param name="robot_frame" value="$(arg wamv_name)/base_link"/>
             </node>
 
             <node pkg="ros_tools" type="pose_stamed_to_path.py" name="estimated_pose_to_path" output="screen">
@@ -83,6 +86,7 @@
             </node>
 
             <node pkg="pozyx_ros" type="multilateration_ros.py" name="multilateration_ros" output="screen">
+                <param name="wamv_name" value="$(arg wamv_name)"/>
                 <remap from="uwb/distances" to="distance"/>
                 <remap from="uwb/pose" to="pose/optim"/>
             </node>
@@ -96,18 +100,18 @@
         </group>
 
         <group ns="viz">
-            <node pkg="ros_tools" type="uwb_yaml_to_tf_marker.py" name="uwb_yaml_to_tf_marker_wamv" output="screen">
-                <remap from="anchors" to="anchor/wamv"/>
+            <node pkg="ros_tools" type="uwb_yaml_to_tf_marker.py" name="uwb_yaml_to_tf_marker_wamv" output="log">
+                <remap from="anchors" to="anchor/$(arg wamv_name)"/>
                 <param name="config_path" value="$(find pozyx_ros)/config/wamv/wamv.yaml"/>
-                <param name="robot_base_frame" value="wamv/base_link"/>
-                <param name="robot_uwb_origin_frame" value="wamv/uwb/origin"/>
-                <param name="robot_uwb_frame" value="wamv/uwb"/>
+                <param name="robot_base_frame" value="$(arg wamv_name)/base_link"/>
+                <param name="robot_uwb_origin_frame" value="$(arg wamv_name)/uwb/origin"/>
+                <param name="robot_uwb_frame" value="$(arg wamv_name)/uwb"/>
                 <param name="uwb_origin_shift_x" value="0.0"/>
                 <param name="uwb_origin_shift_y" value="0.0"/>
                 <param name="uwb_origin_shift_z" value="1.3"/>
                 <rosparam param="marker_color">[0, 0, 1, 1]</rosparam>
             </node>
-            <node pkg="ros_tools" type="uwb_yaml_to_tf_marker.py" name="uwb_yaml_to_tf_marker_drone" output="screen">
+            <node pkg="ros_tools" type="uwb_yaml_to_tf_marker.py" name="uwb_yaml_to_tf_marker_drone" output="log">
                 <remap from="anchors" to="anchor/drone"/>
                 <param name="config_path" value="$(find pozyx_ros)/config/wamv/drone.yaml"/>
                 <param name="robot_base_frame" value="$(arg drone_ns)/base_link"/>
@@ -118,12 +122,12 @@
                 <param name="uwb_origin_shift_z" value="0.0"/>
                 <rosparam param="marker_color">[1, 0, 0, 1]</rosparam>
             </node>
-            <node pkg="ros_tools" type="uwb_anchor_to_tag_line.py" name="uwb_anchor_to_tag_line" output="screen">
+            <node pkg="ros_tools" type="uwb_anchor_to_tag_line.py" name="uwb_anchor_to_tag_line" output="log">
                 <param name="tag_frame_prefix" value="$(arg drone_ns)/uwb/"/>
             </node>
         </group>
 
-        <node pkg="ros_tools" type="model_state_to_pose_stamped" name="model_state_to_pose_stamped_drone" output="log">
+        <!-- <node pkg="ros_tools" type="model_state_to_pose_stamped" name="model_state_to_pose_stamped_drone" output="log">
             <param name="model_name" value="$(arg drone_ns)"/>
             <param name="pose_topic_suffix" value="/pose_stamped"/>
             <param name="publish_rate" value="100"/>
@@ -135,12 +139,7 @@
                 <param name="pose_topic_suffix" value="/pose_stamped"/>
                 <param name="publish_rate" value="100"/>
             </node>
-            <!-- <node pkg="ros_tools" type="model_state_to_tf" name="model_state_to_tf_wamv" output="log" if="$(arg enable_wamv)">
-                <param name="model_name" value="wamv"/>
-                <param name="model_tf_suffix" value="/base_link"/>
-                <param name="broadcast_rate" value="100"/>
-            </node> -->
-        </group>
+        </group> -->
     </group>
 
     <param name="$(arg drone_ns)/robot_description" command="cat /home/argrobotx/robotx-2022/sdf2urdf/iris.urdf"/>
