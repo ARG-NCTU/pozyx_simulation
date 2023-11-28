@@ -127,7 +127,7 @@
             </node>
         </group>
 
-        <!-- <node pkg="ros_tools" type="model_state_to_pose_stamped" name="model_state_to_pose_stamped_drone" output="log">
+        <node pkg="ros_tools" type="model_state_to_pose_stamped" name="model_state_to_pose_stamped_drone" output="log">
             <param name="model_name" value="$(arg drone_ns)"/>
             <param name="pose_topic_suffix" value="/pose_stamped"/>
             <param name="publish_rate" value="100"/>
@@ -139,7 +139,7 @@
                 <param name="pose_topic_suffix" value="/pose_stamped"/>
                 <param name="publish_rate" value="100"/>
             </node>
-        </group> -->
+        </group>
     </group>
 
     <param name="$(arg drone_ns)/robot_description" command="cat /home/argrobotx/robotx-2022/sdf2urdf/iris.urdf"/>
