@@ -1,0 +1,45 @@
+<launch>
+    <arg name="wamv_ns" default="wamv"/>
+    <arg name="drone_ns" default="if750a_camera_pushing"/>
+    <arg name="tag_ns" default="uwb0"/>
+
+    <arg name="anchor_frame_prefix" default="$(arg wamv_ns)/uwb"/>
+    <arg name="tag_frame" default="$(arg drone_ns)/uwb/0"/>
+    <arg name="robot_name" default="$(arg wamv_ns)"/>
+    <arg name="robot_base_frame" default="base_link"/>
+    <arg name="anchor_num" default="6"/>
+
+    <group ns="$(arg tag_ns)">
+        <node pkg="pozyx_simulation" name="pozyx_simulation" type="uwb_simulation_node.py">
+            <param name="anchor_frame_prefix" value="$(arg anchor_frame_prefix)"/>
+            <param name="tag_frame" value="$(arg tag_frame)"/>
+            <param name="robot_name" value="$(arg robot_name)"/>
+            <param name="robot_base_frame" value="$(arg robot_base_frame)"/>
+            <param name="anchor_num" value="$(arg anchor_num)"/>
+        </node>
+
+        <node pkg="pozyx_ros" type="multilateration_ros.py" name="multilateration_ros">
+            <remap from="pose" to="pose/optim"/>
+            <param name="config_path" value="$(find pozyx_ros)/config/wamv/wamv.yaml"/>
+        </node>
+
+        <node pkg="pozyx_ros" type="pose_stamed_to_path.py" name="optim_pose_to_path">
+            <remap from="pose" to="pose/optim"/>
+            <remap from="path" to="path/optim"/>
+            <param name="rate" value="10"/>
+            <param name="epsilon" value="0.1"/>
+            <param name="remove_initial_pose" value="True"/>
+            <param name="remove_initial_count" value="10"/>
+        </node>
+
+        <node pkg="pozyx_ros" type="pose_stamed_to_path.py" name="gt_pose_to_path">
+            <remap from="pose" to="pose/ground_truth"/>
+            <remap from="path" to="path/ground_truth"/>
+            <param name="rate" value="10"/>
+            <param name="epsilon" value="0.1"/>
+            <param name="remove_initial_pose" value="True"/>
+            <param name="remove_initial_count" value="1"/>
+        </node>
+    </group>
+</launch>
+    

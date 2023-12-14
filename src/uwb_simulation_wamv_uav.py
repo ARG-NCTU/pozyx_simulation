@@ -14,7 +14,11 @@ class uwb_ranging(object):
     def __init__(self):
         rospy.init_node("uwb_simulation", anonymous=True)
         self.tag_frame = rospy.get_param("~tag_frame", "drone/uwb/0")
-        self.robot_frame = rospy.get_param("~robot_frame", "wamv/base_link")
+        self.robot_name = rospy.get_param("~robot_name", "wamv")
+        self.robot_base_frame = rospy.get_param("~robot_base_frame", "base_link")
+        
+        self.robot_base_frame = self.robot_name + "/" + self.robot_base_frame
+        
         self.robot_pose_tf = [0.0, 0.0, 0.0]
 
         self.counter = 0
@@ -28,7 +32,7 @@ class uwb_ranging(object):
 
         # distances are publishing with uwb_data_distance
         self.uwb_distances = Float64MultiArray()
-        self.uwb_distances.data = [0.0 for i in range(self.num_anchors)]
+        self.uwb_distances.data = [0.0 for _ in range(self.num_anchors)]
         self.pub_uwb_distances = rospy.Publisher("distance", Float64MultiArray, queue_size=0)
 
         self.estimated_pose = PoseStamped()
@@ -37,31 +41,30 @@ class uwb_ranging(object):
         self.ground_truth = PoseStamped()
         self.pub_ground_truth = rospy.Publisher("pose/ground_truth", PoseStamped, queue_size=0)
         
-        # self.pub_points = rospy.Publisher("anchor_viz", MarkerArray, queue_size=0)
-        # self.markers = MarkerArray()
-        # self.markers.markers = []
-        # self.publish_markers()
 
         # start the publish uwb data
         rospy.Timer(rospy.Duration(1 / 20.0), self.get_robot_pose)
         rospy.Timer(rospy.Duration(1 / 20.0), self.uwb_simulate)
 
-    def get_anchors_pos(self):
+    def get_anchors_pos(self, try_time=0):
+        if try_time > 100:
+            return
+        rospy.sleep(5)
         max_anchor = 10
-        uwb_id = self.robot_frame.split("/")[0] + "/uwb/"
+        uwb_id = self.robot_name + "/uwb/"
 
         for i in range(max_anchor):
             try:
                 rospy.sleep(0.3)
-                (trans, rot) = self.listener.lookupTransform(self.robot_frame, uwb_id + str(i), rospy.Time(0))
+                (trans, rot) = self.listener.lookupTransform(self.robot_base_frame, uwb_id + str(i), rospy.Time(0))
                 self.anchor_poses.append(trans)
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                break
+                rospy.logwarn("[UWB Simulation]: " + "There is not found " + self.robot_base_frame + " to "+ uwb_id + str(i) + " anchor.")
 
         if self.anchor_poses == []:
             rospy.logwarn("[UWB Simulation]: " + "There is not found any anchors. Function is working again.")
             rospy.logwarn("[UWB Simulation]: " + "Please check the anchor frame name: " + uwb_id + "0 ~ " + uwb_id + str(max_anchor) + " is exist.")
-            self.get_anchors_pos()
+            self.get_anchors_pos(try_time=try_time + 1)
         else:
             rospy.loginfo("[UWB Simulation]: " + "UWB Anchor List:\nWarning : uint is mm \n" + str(self.anchor_poses))
 
@@ -70,7 +73,7 @@ class uwb_ranging(object):
     def cal_residuals(self, guess):
         x0, y0, z0, r = guess
 
-        residuals = [0.0 for i in range(self.num_anchors)]
+        residuals = [0.0 for _ in range(self.num_anchors)]
         for i in range(self.num_anchors):
             residual = np.square(x0 - self.anchor_poses[i][0]) + np.square(y0 - self.anchor_poses[i][1]) + np.square(z0 - self.anchor_poses[i][2]) - np.square(r - self.uwb_distances.data[i])
             residuals[i] = residual
@@ -109,6 +112,7 @@ class uwb_ranging(object):
         ## This is from EE6F test result
         stddev_slope = 0.00135289
         stddev_intercept = 0.0945902
+        
         stddev_slope = 0.0
         stddev_intercept = 0.0
         # print uwb_dist and normal size
@@ -119,48 +123,23 @@ class uwb_ranging(object):
         now = rospy.Time.now()
         
         self.estimated_pose.header.stamp = now
-        self.estimated_pose.header.frame_id = self.robot_frame.split("/")[0] + "/uwb_origin"
+        self.estimated_pose.header.frame_id = self.robot_base_frame
         self.estimated_pose.pose.orientation.w = 1.0
         self.pub_estimated_pose.publish(self.estimated_pose)
 
         
         self.ground_truth.header.stamp = now
-        self.ground_truth.header.frame_id = self.robot_frame
+        self.ground_truth.header.frame_id = self.robot_base_frame
         self.ground_truth.pose.orientation.w = 1.0
         self.pub_ground_truth.publish(self.ground_truth)
         
         self.uwb_distances.data = [int(i * 1000) for i in self.uwb_distances.data]
         self.pub_uwb_distances.publish(self.uwb_distances)
-        # self.publish_markers()
 
-    # def publish_markers(self):
-    #     now = rospy.Time.now()
-    #     self.markers.markers = []
-    #     for i, pose in enumerate(self.anchor_poses):
-    #         marker = Marker()
-    #         marker.header.stamp = now
-    #         marker.header.frame_id = "map"
-    #         marker.id = i
-    #         marker.type = marker.CUBE
-    #         marker.action = marker.ADD
-    #         marker.pose.position.x = pose[0]
-    #         marker.pose.position.y = pose[1]
-    #         marker.pose.position.z = pose[2]
-    #         marker.pose.orientation.w = 1.0
-    #         marker.scale.x = 0.2
-    #         marker.scale.y = 0.2
-    #         marker.scale.z = 0.2
-    #         marker.color.a = 1.0
-    #         marker.color.r = 1
-    #         marker.color.g = 0
-    #         marker.color.b = 0
-    #         marker.lifetime = rospy.Duration.from_sec(0.0)
-    #         self.markers.markers.append(marker)
-    #     self.pub_points.publish(self.markers)
 
     def get_robot_pose(self, e):
         try:
-            (trans, rot) = self.listener.lookupTransform(self.robot_frame, self.tag_frame, rospy.Time(0))
+            (trans, rot) = self.listener.lookupTransform(self.robot_base_frame, self.tag_frame, rospy.Time(0))
             self.robot_pose_tf = trans
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             pass
