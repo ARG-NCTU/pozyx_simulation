@@ -9,6 +9,8 @@
     <arg name="robot_base_frame" default="base_link"/>
     <arg name="anchor_num" default="6"/>
 
+    <arg name="enable_path" default="true"/>
+
     <group ns="$(arg tag_ns)">
         <node pkg="pozyx_simulation" name="pozyx_simulation" type="uwb_simulation_node.py">
             <param name="anchor_frame_prefix" value="$(arg anchor_frame_prefix)"/>
@@ -23,7 +25,7 @@
             <param name="config_path" value="$(find pozyx_ros)/config/wamv/wamv.yaml"/>
         </node>
 
-        <node pkg="pozyx_ros" type="pose_stamed_to_path.py" name="optim_pose_to_path">
+        <node pkg="pozyx_ros" type="pose_stamed_to_path.py" name="optim_pose_to_path" if="$(arg enable_path)">
             <remap from="pose" to="pose/optim"/>
             <remap from="path" to="path/optim"/>
             <param name="rate" value="10"/>
@@ -32,7 +34,7 @@
             <param name="remove_initial_count" value="10"/>
         </node>
 
-        <node pkg="pozyx_ros" type="pose_stamed_to_path.py" name="gt_pose_to_path">
+        <node pkg="pozyx_ros" type="pose_stamed_to_path.py" name="gt_pose_to_path"  if="$(arg enable_path)">
             <remap from="pose" to="pose/ground_truth"/>
             <remap from="path" to="path/ground_truth"/>
             <param name="rate" value="10"/>
