@@ -1,62 +1,69 @@
 <launch>
-    <arg name="namespace" default="pozyx_simulation"/>
-    <arg name="wamv_ns" default="wamv"/>
-    <arg name="drone_ns" default="drone"/>
-    <arg name="enable_line_marker" default="false"/>
+    <arg name="namespace" default="pozyx_simulation" />
+    <arg name="wamv_ns" default="wamv" />
+    <arg name="drone_ns" default="drone" />
+    <arg name="enable_line_marker" default="false" />
+    <arg name="pub_marker" default="true" />
 
-    <arg name="enable_path" default="true"/>
+    <arg name="enable_multilateration" default="true" />
+    <arg name="enable_path" default="true" />
 
     <group ns="$(arg namespace)">
         <!-- Setup tf and marker -->
         <include file="$(find pozyx_ros)/launch/uwb_tf_maker.launch">
-            <arg name="namespace" value="tf_marker"/>
-            <arg name="wamv_ns" value="$(arg wamv_ns)"/>
-            <arg name="drone_ns" value="$(arg drone_ns)"/>
-            <arg name="enable_line_marker" value="$(arg enable_line_marker)"/>
+            <arg name="namespace" value="$(arg drone_ns)/tf_marker" />
+            <arg name="wamv_ns" value="$(arg wamv_ns)" />
+            <arg name="drone_ns" value="$(arg drone_ns)" />
+            <arg name="enable_line_marker" value="$(arg enable_line_marker)" />
+            <arg name="pub_marker" value="$(arg pub_marker)" />
         </include>
 
         <include file="$(find pozyx_simulation)/launch/uwb_simulation.launch">
-            <arg name="wamv_ns" value="$(arg wamv_ns)"/>
-            <arg name="drone_ns" value="$(arg drone_ns)"/>
-            <arg name="tag_ns" default="uwb0"/>
-            
-            <arg name="anchor_frame_prefix" value="$(arg wamv_ns)/uwb"/>
-            <arg name="tag_frame" value="$(arg drone_ns)/uwb/0"/>
-            <arg name="robot_name" value="$(arg wamv_ns)"/>
-            <arg name="robot_base_frame" value="base_link"/>
-            <arg name="anchor_num" value="6"/>
-            
-            <arg name="enable_path" default="$(arg enable_path)"/>
+            <arg name="wamv_ns" value="$(arg wamv_ns)" />
+            <arg name="drone_ns" value="$(arg drone_ns)" />
+            <arg name="tag_ns" default="uwb0" />
+
+            <arg name="anchor_frame_prefix" value="$(arg wamv_ns)/uwb" />
+            <arg name="tag_frame" value="$(arg drone_ns)/uwb/0" />
+            <arg name="robot_name" value="$(arg wamv_ns)" />
+            <arg name="robot_base_frame" value="base_link" />
+            <arg name="anchor_num" value="6" />
+
+            <arg name="enable_multilateration" value="$(arg enable_multilateration)" />
+            <arg name="enable_path" value="$(arg enable_path)" />
         </include>
 
         <include file="$(find pozyx_simulation)/launch/uwb_simulation.launch">
-            <arg name="wamv_ns" value="$(arg wamv_ns)"/>
-            <arg name="drone_ns" value="$(arg drone_ns)"/>
-            <arg name="tag_ns" default="uwb1"/>
+            <arg name="wamv_ns" value="$(arg wamv_ns)" />
+            <arg name="drone_ns" value="$(arg drone_ns)" />
+            <arg name="tag_ns" default="uwb1" />
 
-            <arg name="anchor_frame_prefix" value="$(arg wamv_ns)/uwb"/>
-            <arg name="tag_frame" value="$(arg drone_ns)/uwb/1"/>
-            <arg name="robot_name" value="$(arg wamv_ns)"/>
-            <arg name="robot_base_frame" value="base_link"/>
-            <arg name="anchor_num" value="6"/>
-            
-            <arg name="enable_path" default="$(arg enable_path)"/>
+            <arg name="anchor_frame_prefix" value="$(arg wamv_ns)/uwb" />
+            <arg name="tag_frame" value="$(arg drone_ns)/uwb/1" />
+            <arg name="robot_name" value="$(arg wamv_ns)" />
+            <arg name="robot_base_frame" value="base_link" />
+            <arg name="anchor_num" value="6" />
+
+            <arg name="enable_multilateration" value="$(arg enable_multilateration)" />
+            <arg name="enable_path" value="$(arg enable_path)" />
         </include>
 
-        <node pkg="pozyx_ros" type="midpoint_pose_calculator_node.py" name="midpoint_optim_pose_calculator_node">
-            <remap from="input_pose1" to="uwb0/pose/optim"/>
-            <remap from="input_pose2" to="uwb1/pose/optim"/>
-            <remap from="ouput_pose" to="drone/pose/optim"/>
-            <param name="time_tolerance" value="0.5"/>
-            <param name="rate" value="10"/>
+        <node pkg="pozyx_ros" type="midpoint_pose_calculator_node.py"
+            name="midpoint_optim_pose_calculator_node" if="$(arg enable_multilateration)">
+            <remap from="input_pose1" to="uwb0/pose/optim" />
+            <remap from="input_pose2" to="uwb1/pose/optim" />
+            <remap from="ouput_pose" to="drone/pose/optim" />
+            <param name="time_tolerance" value="0.5" />
+            <param name="rate" value="10" />
         </node>
 
-        <node pkg="pozyx_ros" type="midpoint_pose_calculator_node.py" name="midpoint_gt_pose_calculator_node">
-            <remap from="input_pose1" to="uwb0/pose/ground_truth"/>
-            <remap from="input_pose2" to="uwb1/pose/ground_truth"/>
-            <remap from="ouput_pose" to="drone/pose/ground_truth"/>
-            <param name="time_tolerance" value="0.5"/>
-            <param name="rate" value="10"/>
+        <node pkg="pozyx_ros" type="midpoint_pose_calculator_node.py"
+            name="midpoint_gt_pose_calculator_node" if="$(arg enable_multilateration)">
+            <remap from="input_pose1" to="uwb0/pose/ground_truth" />
+            <remap from="input_pose2" to="uwb1/pose/ground_truth" />
+            <remap from="ouput_pose" to="drone/pose/ground_truth" />
+            <param name="time_tolerance" value="0.5" />
+            <param name="rate" value="10" />
         </node>
     </group>
 </launch>
