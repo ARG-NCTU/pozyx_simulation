@@ -29,7 +29,7 @@ class uwb_ranging(object):
         self.anchor_poses = np.zeros((self.anchor_num, 3))
         self.anchor_poses = self.get_anchors_pos(self.anchor_num)
         rospy.loginfo("\nAnchor poses: \n{}\n".format(self.anchor_poses))
-        
+
         # distances are publishing with uwb_data_distance
         self.uwb_distances = Float64MultiArray()
         self.uwb_distances.data = [0.0 for _ in range(self.anchor_num)]
@@ -39,7 +39,7 @@ class uwb_ranging(object):
         self.pub_ground_truth = rospy.Publisher("pose/ground_truth", PoseStamped, queue_size=0)
 
         self.robot_pose_tf = np.zeros((3,))
-        
+
         # start the publish uwb data
         rospy.Timer(rospy.Duration(1 / 50.0), self.get_robot_pose)
         rospy.Timer(rospy.Duration(1 / 20.0), self.uwb_simulate)
@@ -56,7 +56,9 @@ class uwb_ranging(object):
                 )
                 rospy.loginfo("Look up {} to {}".format(self.robot_base_frame, anchor_frame))
                 try:
-                    self.listener.waitForTransform(self.robot_base_frame, anchor_frame, rospy.Time(0), rospy.Duration(0.5))
+                    self.listener.waitForTransform(
+                        self.robot_base_frame, anchor_frame, rospy.Time(0), rospy.Duration(0.5)
+                    )
                     trans, rot = self.listener.lookupTransform(self.robot_base_frame, anchor_frame, rospy.Time(0))
                     anchor_poses[i] = np.array(trans)
                     success[i] = 1
@@ -71,8 +73,8 @@ class uwb_ranging(object):
             (trans, rot) = self.listener.lookupTransform(self.robot_base_frame, self.tag_frame, rospy.Time(0))
             self.robot_pose_tf = trans
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-            pass
-        
+            rospy.logwarn("Robot tf not ready yet")
+
     def uwb_simulate(self, e):
         # Set ground truth
         self.ground_truth.pose.position.x = self.robot_pose_tf[0]
@@ -111,7 +113,7 @@ class uwb_ranging(object):
 
     def publish(self):
         now = rospy.Time.now()
-        
+
         self.ground_truth.header.stamp = now
         self.ground_truth.header.frame_id = self.robot_base_frame
         self.ground_truth.pose.orientation.w = 1.0
@@ -119,8 +121,6 @@ class uwb_ranging(object):
 
         self.uwb_distances.data = [int(i * 1000) for i in self.uwb_distances.data]
         self.pub_uwb_distances.publish(self.uwb_distances)
-
-    
 
 
 if __name__ == "__main__":
